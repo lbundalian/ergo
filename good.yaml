@@ -1,0 +1,13 @@
+workflow:
+  tasks:
+    - name: "Task 1"
+      operator: "bash"
+      command: "echo 'Running Task 1'"
+      catch:
+        command: "echo 'Fallback: Task 1 Failed'"
+
+    - name: "Task 2"
+      operator: "bash"
+      command: "echo 'Running Task 2'"
+      catch:
+        command: "print('Fallback: Task 2 Failed')"

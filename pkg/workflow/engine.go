@@ -5,14 +5,44 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
 
-// ExecuteTaskFSM runs a task using FSM for state tracking.
-func ExecuteTaskFSM(tsm *TaskStateMachine) {
-	fmt.Printf("Task %s: Starting...\n", tsm.Task.Name)
+// Task colors
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorCyan   = "\033[36m"
+)
+
+// Custom simple loading animation
+func loadingAnimation(taskName string, stopChan chan bool) {
+	frames := []string{"-", "\\", "|", "/"}
+	i := 0
+	for {
+		select {
+		case <-stopChan:
+			return
+		default:
+			fmt.Printf("\r%s[WORKFLOW]%s Task %s: %s Running %s ", colorCyan, colorReset, taskName, colorYellow, frames[i%len(frames)])
+			i++
+			time.Sleep(150 * time.Millisecond)
+		}
+	}
+}
+
+// ExecuteTaskFSM runs a task and ensures workflow stops on failure.
+func ExecuteTaskFSM(tsm *TaskStateMachine) error {
+	fmt.Printf("\n%s[WORKFLOW]%s Task %s: %sStarting...%s\n", colorCyan, colorReset, tsm.Task.Name, colorYellow, colorReset)
 
 	// Start the task FSM
 	tsm.TransitionTask("start")
+
+	// Start custom loading animation
+	stopAnimation := make(chan bool)
+	go loadingAnimation(tsm.Task.Name, stopAnimation)
 
 	var err error
 	switch strings.ToLower(tsm.Task.Operator) {
@@ -24,28 +54,55 @@ func ExecuteTaskFSM(tsm *TaskStateMachine) {
 		err = runCommand(tsm.Task.Command)
 	}
 
+	// Stop the loading animation
+	stopAnimation <- true
+	fmt.Print("\r") // Clear the line
+
 	// Handle success or failure
 	if err != nil {
 		tsm.TransitionTask("fail")
-		fmt.Printf("Task %s: Failed.\n", tsm.Task.Name)
+		fmt.Printf("%s[FAILED] Task %s failed!%s\n", colorRed, tsm.Task.Name, colorReset)
 
+		// If a fallback exists, execute it
 		if tsm.Task.Catch != nil {
-			fmt.Printf("Task %s: Running fallback: %s\n", tsm.Task.Name, tsm.Task.Catch.Command)
-			runCommand(tsm.Task.Catch.Command)
-			tsm.TransitionTask("succeed")
+			fmt.Printf("%s[RECOVERY]%s Task %s: Running fallback command: %s\n", colorYellow, colorReset, tsm.Task.Name, tsm.Task.Catch.Command)
+			recErr := runCommand(tsm.Task.Catch.Command)
+			if recErr != nil {
+				fmt.Printf("%s[FALLBACK FAILED] Task %s: Fallback command also failed!%s\n", colorRed, tsm.Task.Name, colorReset)
+				return fmt.Errorf("task %s failed, stopping workflow", tsm.Task.Name)
+			} else {
+				tsm.TransitionTask("succeed")
+				fmt.Printf("%s[SUCCESS]%s Task %s recovered successfully!%s\n", colorGreen, colorReset, tsm.Task.Name, colorReset)
+			}
+		} else {
+			fmt.Printf("%s[ERROR] No fallback found. Stopping workflow execution.%s\n", colorRed, colorReset)
+			return fmt.Errorf("task %s failed, stopping workflow", tsm.Task.Name)
 		}
 	} else {
 		tsm.TransitionTask("succeed")
+		fmt.Printf("%s[SUCCESS]%s Task %s completed successfully!%s\n", colorGreen, colorReset, tsm.Task.Name, colorReset)
 	}
+
+	return nil
 }
 
-// ExecuteWorkflow reads and runs tasks in sequence.
+// ExecuteWorkflow runs tasks sequentially and stops on failure.
 func ExecuteWorkflow(wf *Workflow) {
+	fmt.Println("\n🚀 Starting Workflow Execution...\n")
+
 	for _, task := range wf.Workflow.Tasks {
 		tsm := NewTaskFSM(task)
-		ExecuteTaskFSM(tsm)
-		fmt.Println("-----")
+
+		// Execute task and STOP if it fails
+		if err := ExecuteTaskFSM(tsm); err != nil {
+			fmt.Println("\n❌ Workflow execution halted due to task failure.\n")
+			return
+		}
+
+		fmt.Println("-----") // Separator between tasks
 	}
+
+	fmt.Println("\n✅ Workflow Execution Completed Successfully! 🎉\n")
 }
 
 // runCommand executes shell commands.
@@ -57,7 +114,7 @@ func runCommand(cmdStr string) error {
 	err := cmd.Run()
 	fmt.Print(out.String())
 	if err != nil {
-		fmt.Printf("Error: %s\n", stderr.String())
+		fmt.Printf("%sError: %s%s\n", colorRed, stderr.String(), colorReset)
 	}
 	return err
 }

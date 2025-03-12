@@ -14,4 +14,9 @@ workflow:
 
     - name: "Task 3"
       operator: "cli"
-      command: "dir"
+      command: "invalidcommand"  # This will cause failure
+      # No fallback defined, so workflow will STOP
+
+    - name: "Task 4"
+      operator: "bash"
+      command: "echo 'This should NOT run if Task 3 fails!'"

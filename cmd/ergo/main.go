@@ -22,6 +22,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Executing workflow...")
+	fmt.Println("🚀 Executing workflow...")
 	workflow.ExecuteWorkflow(wf)
 }
