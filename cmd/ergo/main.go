@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yourusername/ergo/pkg/workflow"
+	"github.com/lbundalian/ergo/pkg/workflow"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )

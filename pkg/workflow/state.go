@@ -2,10 +2,13 @@ package workflow
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/looplab/fsm"
 )
+
+// Task represents a unit of work.
+type Task struct {
+	Name string
+}
 
 // TaskStateMachine wraps a Task with a state machine.
 type TaskStateMachine struct {
@@ -19,6 +22,7 @@ func NewTaskFSM(task Task) *TaskStateMachine {
 	tsm := &TaskStateMachine{
 		Task: task,
 	}
+
 	tsm.FSM = fsm.NewFSM(
 		"ready", // initial state
 		fsm.Events{
@@ -28,7 +32,7 @@ func NewTaskFSM(task Task) *TaskStateMachine {
 			{Name: "recover", Src: []string{"failed"}, Dst: "recovering"},
 		},
 		fsm.Callbacks{
-			"enter_state": func(e *fsm.Event) {
+			"enter_state": func(e fsm.Event) { // ✅ FSM v1.0.2 requires non-pointer receiver
 				tsm.State = e.Dst
 				fmt.Printf("Task %s transitioned to state: %s\n", task.Name, tsm.State)
 			},
