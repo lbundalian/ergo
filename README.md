@@ -1,5 +1,8 @@
 # erGO
 
+<img src="ergo.webp" alt="Alt text" width="300"/>
+
+
 erGO is a state machine–inspired workflow engine written in Go. It supports multiple operator types (Bash, CLI, Python, Map/Reduce) and error handling (with fallback commands), similar to Snakemake, Nextflow, GCP Workflows, and AWS Step Functions.
 
 ## Installation
