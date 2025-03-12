@@ -13,5 +13,5 @@ Clone the repository and build the application:
 go build -o ergo ./cmd/ergo
 
 
-## ./ergo --run ErgoFile
+## ./ergo --run workflow.yaml
 
