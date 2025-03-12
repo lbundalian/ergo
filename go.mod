@@ -1,8 +1,5 @@
-module github.com/lbundalian/ergo
+module ergo
 
 go 1.18
 
-require (
-	github.com/looplab/fsm v1.0.2
-	gopkg.in/yaml.v2 v2.4.0
-)
+require gopkg.in/yaml.v2 v2.4.0

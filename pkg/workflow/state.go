@@ -2,13 +2,8 @@ package workflow
 
 import (
 	"fmt"
-	"github.com/looplab/fsm"
+	"ergo/pkg/fsm"
 )
-
-// Task represents a unit of work.
-type Task struct {
-	Name string
-}
 
 // TaskStateMachine wraps a Task with a state machine.
 type TaskStateMachine struct {
@@ -17,7 +12,7 @@ type TaskStateMachine struct {
 	State string
 }
 
-// NewTaskFSM creates a new state machine for a Task.
+// NewTaskFSM initializes a state machine for a task.
 func NewTaskFSM(task Task) *TaskStateMachine {
 	tsm := &TaskStateMachine{
 		Task: task,
@@ -25,18 +20,21 @@ func NewTaskFSM(task Task) *TaskStateMachine {
 
 	tsm.FSM = fsm.NewFSM(
 		"ready", // initial state
-		fsm.Events{
-			{Name: "start", Src: []string{"ready"}, Dst: "running"},
-			{Name: "succeed", Src: []string{"running", "recovering"}, Dst: "succeeded"},
-			{Name: "fail", Src: []string{"running"}, Dst: "failed"},
-			{Name: "recover", Src: []string{"failed"}, Dst: "recovering"},
-		},
-		fsm.Callbacks{
-			"enter_state": func(e fsm.Event) { // ✅ FSM v1.0.2 requires non-pointer receiver
-				tsm.State = e.Dst
-				fmt.Printf("Task %s transitioned to state: %s\n", task.Name, tsm.State)
-			},
+		map[string]map[string]string{
+			"ready":     {"start": "running"},
+			"running":   {"succeed": "succeeded", "fail": "failed"},
+			"failed":    {"recover": "recovering"},
+			"recovering": {"succeed": "succeeded", "fail": "failed"},
 		},
 	)
+
 	return tsm
+}
+
+// TransitionTask changes the task state
+func (tsm *TaskStateMachine) TransitionTask(event string) {
+	err := tsm.FSM.Transition(event)
+	if err != nil {
+		fmt.Printf("Task %s: Invalid transition (%s)\n", tsm.Task.Name, event)
+	}
 }

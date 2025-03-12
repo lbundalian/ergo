@@ -1,0 +1,17 @@
+workflow:
+  tasks:
+    - name: "Task 1"
+      operator: "bash"
+      command: "echo 'Running Task 1'"
+      catch:
+        command: "echo 'Fallback: Task 1 Failed'"
+
+    - name: "Task 2"
+      operator: "python"
+      command: "print('Task 2 Running')"
+      catch:
+        command: "print('Fallback: Task 2 Failed')"
+
+    - name: "Task 3"
+      operator: "cli"
+      command: "dir"
