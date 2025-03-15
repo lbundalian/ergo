@@ -7,10 +7,10 @@ workflow:
         command: "echo 'Fallback: Task 1 Failed'"
 
     - name: "Task 2"
-      operator: "python"
-      command: "print('Task 2 Running')"
+      operator: "bash"
+      command: "python hellopython.py"
       catch:
-        command: "print('Fallback: Task 2 Failed')"
+        command: "invalidcommand)"
 
     - name: "Task 3"
       operator: "cli"

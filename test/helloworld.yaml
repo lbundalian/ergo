@@ -1,0 +1,13 @@
+workflow:
+  tasks:
+    - name: "bash_operation!"
+      operator: "bash"
+      command: "echo 'Hello World!'"
+      catch:
+        command: "echo 'Fallback: Task 1 Failed'"
+
+    - name: "python_operation"
+      operator: "python"
+      command: ""
+      catch:
+        command: "echo 'Fallback: Task 1 Failed'"

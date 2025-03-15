@@ -3,38 +3,42 @@ package workflow
 import (
 	"fmt"
 	"ergo/pkg/fsm"
+	"time"
 )
 
-// TaskStateMachine wraps a Task with a state machine.
+// TaskStateMachine wraps a Task with its current state, runtime, and an FSM.
 type TaskStateMachine struct {
-	Task  Task
-	FSM   *fsm.FSM
-	State string
+	Task     Task
+	FSM      *fsm.FSM
+	State    string        // Mirror of FSM's current state.
+	Duration time.Duration // Runtime of the task.
 }
 
-// NewTaskFSM initializes a state machine for a task.
+// Define transitions for your FSM.
+var transitions = map[string]map[string]string{
+	"waiting": {"start": "running"},
+	"running": {"succeed": "succeeded", "fail": "failed"},
+	"failed":  {"recover": "recovering"},
+	"recovering": {"succeed": "succeeded"},
+}
+
+// NewTaskFSM creates a new TaskStateMachine for a given task.
 func NewTaskFSM(task Task) *TaskStateMachine {
-	tsm := &TaskStateMachine{
-		Task: task,
+	f := fsm.NewFSM("waiting", transitions)
+	return &TaskStateMachine{
+		Task:     task,
+		FSM:      f,
+		State:    f.GetState(),
+		Duration: 0, // Initialize duration to zero.
 	}
-
-	tsm.FSM = fsm.NewFSM(
-		"ready", // initial state
-		map[string]map[string]string{
-			"ready":     {"start": "running"},
-			"running":   {"succeed": "succeeded", "fail": "failed"},
-			"failed":    {"recover": "recovering"},
-			"recovering": {"succeed": "succeeded", "fail": "failed"},
-		},
-	)
-
-	return tsm
 }
 
-// TransitionTask changes the task state
+// TransitionTask updates the task state using your custom FSM.
 func (tsm *TaskStateMachine) TransitionTask(event string) {
-	err := tsm.FSM.Transition(event)
-	if err != nil {
-		fmt.Printf("Task %s: Invalid transition (%s)\n", tsm.Task.Name, event)
+	if err := tsm.FSM.Transition(event); err != nil {
+		fmt.Printf("Task %s: Invalid transition (%s): %v\n", tsm.Task.Name, event, err)
+	} else {
+		tsm.State = tsm.FSM.GetState()
+		fmt.Printf("Task %s transitioned to state: %s %s\n", tsm.Task.Name, tsm.State, getStateIcon(tsm.State))
 	}
 }
